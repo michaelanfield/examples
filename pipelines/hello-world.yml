@@ -1,14 +1,44 @@
----
+resources:
+- name: repo
+  type: git
+  source:
+    uri: https://github.com/michaelanfield/examples.git
+
 jobs:
-- name: job
-  public: true
+- name: hello-world-job
   plan:
-  - task: simple-task
+  - get: repo
+    trigger: true
+  - task: hello-world-task
     config:
       platform: linux
       image_resource:
         type: registry-image
-        source: { repository: busybox }
+        source:
+          repository: busybox
+      outputs:
+      - name: the-artifact
       run:
-        path: echo
-        args: ["Hello world!"]
+        path: sh
+        args: 
+        - -cx
+        - |
+          ls -l .
+          echo "Hello from another step!" > the-artifact/message
+
+  - task: read-the-artifact
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: busybox
+      inputs:
+      - name: the-artifact
+      run:
+        path: sh
+        args:
+        - -cx
+        - |
+          ls -l .
+          cat the-artifact/message
